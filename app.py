@@ -15,7 +15,7 @@ def chat():
         char_bio = data.get("bio")
 
         api_key = os.getenv("GEMINI_KEY")
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
 
         prompt = f"Hráš rolu osoby na zoznamke. Meno: {char_name}. Bio: {char_bio}. Odpovedaj krátko a slovensky na: {user_msg}"
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
