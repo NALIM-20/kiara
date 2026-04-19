@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spark | AI Dating (Render Edition)</title>
+    <style>
+        /* Ponechal som všetky tvoje pôvodné štýly (CSS) nezmenené */
+        :root {
+            --color-background-primary: #ffffff;
+            --color-background-secondary: #f8f9fa;
+            --color-background-info: #e8f4fd;
+            --color-text-primary: #1a1a1a;
+            --color-text-secondary: #4a4a4a;
+            --color-text-tertiary: #757575;
+            --color-text-info: #007bff;
+            --color-border-secondary: #e0e0e0;
+            --color-border-tertiary: #eeeeee;
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        *{box-sizing:border-box;margin:0;padding:0}
+        .app{max-width:420px;margin:0 auto;min-height:720px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;font-family:var(--font-sans)}
+        .topbar{padding:16px 20px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid var(--color-border-tertiary);flex-shrink:0}
+        .logo{font-size:20px;font-weight:500;color:var(--color-text-primary);letter-spacing:-0.5px}.logo span{color:#D4537E}
+        .nav-icons{display:flex;gap:12px}
+        .nav-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;color:var(--color-text-secondary)}
+        .screen{flex:1;display:none;flex-direction:column;overflow:hidden}.screen.active{display:flex}
+        .card-stack{flex:1;position:relative;padding:16px 16px 0;display:flex;justify-content:center;align-items:flex-start;overflow:hidden}
+        .profile-card{width:100%;max-width:370px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:18px;overflow:hidden;user-select:none;transition:transform .38s ease,opacity .38s ease}
+        .profile-card.fly-right{transform:translateX(140%) rotate(24deg)!important;opacity:0}
+        .profile-card.fly-left{transform:translateX(-140%) rotate(-24deg)!important;opacity:0}
+        .profile-card.fly-up{transform:translateY(-130%) scale(0.9)!important;opacity:0}
+        .avatar-area{height:310px;position:relative;overflow:hidden;background:var(--color-background-secondary)}
+        .avatar-area img{width:100%;height:100%;object-fit:cover;display:block}
+        .photo-dots{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:2}
+        .dot{width:26px;height:3px;border-radius:2px;background:rgba(255,255,255,0.4)}.dot.active{background:#fff}
+        .profile-overlay{position:absolute;bottom:0;left:0;right:0;padding:20px 18px 14px;background:linear-gradient(transparent,rgba(0,0,0,0.62))}
+        .profile-name{font-size:22px;font-weight:500;color:#fff}
+        .profile-loc{font-size:13px;color:rgba(255,255,255,.85);margin-top:2px}
+        .profile-body{padding:14px 18px 10px}
+        .profile-bio{font-size:13px;color:var(--color-text-secondary);line-height:1.6;margin-bottom:12px}
+        .tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+        .tag{font-size:11px;padding:3px 9px;border-radius:20px;border:0.5px solid var(--color-border-secondary);color:var(--color-text-secondary)}
+        .facts-row{display:flex;gap:10px;flex-wrap:wrap}
+        .fact{font-size:11px;color:var(--color-text-tertiary)}
+        .action-bar{padding:12px 20px 16px;display:flex;justify-content:center;gap:18px;flex-shrink:0}
+        .action-btn{width:54px;height:54px;border-radius:50%;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;transition:background .15s,transform .1s}
+        .action-btn.like{border-color:#ED93B1}.action-btn.nope{border-color:#F0997B}.action-btn.super{border-color:#85B7EB}
+        
+        .match-toast{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.85);z-index:30;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:18px;padding:28px 24px;text-align:center;min-width:260px;transition:opacity .25s,transform .25s}
+        .match-toast.show{display:block;transform:translate(-50%,-50%) scale(1)}
+        .mt-avatars{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px}
+        .mt-av{width:64px;height:64px;border-radius:50%;object-fit:cover;border:2.5px solid #D4537E}
+        .mt-title{font-size:20px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px}
+        .mt-sub{font-size:13px;color:var(--color-text-secondary);margin-bottom:16px}
+        .mt-btns{display:flex;gap:10px;justify-content:center}
+        .mt-btn-msg{background:#D4537E;color:#fff;border:none;padding:9px 20px;border-radius:22px;font-size:13px;cursor:pointer;font-family:var(--font-sans)}
+        .mt-btn-skip{background:none;color:var(--color-text-tertiary);border:0.5px solid var(--color-border-tertiary);padding:9px 20px;border-radius:22px;font-size:13px;cursor:pointer;font-family:var(--font-sans)}
+
+        .section-title{font-size:15px;font-weight:500;padding:14px 18px 6px;color:var(--color-text-primary);flex-shrink:0}
+        .match-scroll{display:flex;gap:12px;padding:6px 18px 14px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+        .match-bubble{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex-shrink:0}
+        .mb-img{width:58px;height:58px;border-radius:50%;object-fit:cover;border:2.5px solid #D4537E}
+        .match-name-sm{font-size:11px;color:var(--color-text-secondary);text-align:center}
+        .conv-list{flex:1;overflow-y:auto}
+        .conv-item{display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:0.5px solid var(--color-border-tertiary);cursor:pointer}
+        .conv-av{width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0}
+        .conv-info{flex:1;min-width:0}
+        .conv-name{font-size:14px;font-weight:500;color:var(--color-text-primary);display:flex;align-items:center;gap:6px}
+        .conv-preview{font-size:12px;color:var(--color-text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+        .ai-badge{font-size:10px;padding:2px 6px;background:var(--color-background-info);color:var(--color-text-info);border-radius:10px;font-weight:500}
+        
+        .chat-header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:0.5px solid var(--color-border-tertiary);flex-shrink:0}
+        .back-btn{font-size:18px;cursor:pointer;color:var(--color-text-secondary);padding:4px}
+        .chat-av{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0}
+        .chat-header-info{flex:1}
+        .chat-header-name{font-size:14px;font-weight:500;color:var(--color-text-primary)}
+        .chat-header-sub{font-size:11px;color:var(--color-text-tertiary)}
+        .ai-toggle{font-size:11px;background:var(--color-background-info);color:var(--color-text-info);padding:4px 10px;border-radius:16px;cursor:pointer;border:none}
+        .ai-toggle.off{background:var(--color-background-secondary);color:var(--color-text-secondary)}
+        
+        .messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
+        .msg{max-width:80%;padding:9px 13px;border-radius:16px;font-size:13px;line-height:1.5}
+        .msg.them{background:var(--color-background-secondary);color:var(--color-text-primary);border-bottom-left-radius:4px;align-self:flex-start}
+        .msg.me{background:#D4537E;color:#fff;border-bottom-right-radius:4px;align-self:flex-end}
+        .msg.typing{background:var(--color-background-info);color:var(--color-text-info);align-self:flex-start;font-size:12px;font-style:italic}
+        
+        .suggest-row{padding:6px 14px;display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+        .suggest-chip{font-size:11px;background:var(--color-background-info);color:var(--color-text-info);padding:5px 11px;border-radius:14px;white-space:nowrap;cursor:pointer;border:0.5px solid var(--color-border-tertiary)}
+        
+        .chat-input-row{padding:10px 14px;display:flex;gap:8px;align-items:center;border-top:0.5px solid var(--color-border-tertiary);flex-shrink:0}
+        .chat-input{flex:1;border:0.5px solid var(--color-border-secondary);border-radius:22px;padding:9px 14px;font-size:13px;background:var(--color-background-secondary);outline:none}
+        .send-btn{width:36px;height:36px;border-radius:50%;background:#D4537E;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+        
+        .bottomnav{display:flex;border-top:0.5px solid var(--color-border-tertiary);flex-shrink:0}
+        .bnav-btn{flex:1;padding:11px 0;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font-size:10px;color:var(--color-text-tertiary);background:none;border:none}
+        .bnav-btn.active{color:#D4537E}
+        .empty-state{text-align:center;padding:50px 20px;color:var(--color-text-tertiary);font-size:14px}
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="topbar">
+        <div class="logo">spark<span>.</span></div>
+        <div class="nav-icons"><div class="nav-icon">⚡</div><div class="nav-icon">🔔</div></div>
+    </div>
+
+    <div class="screen active" id="screen-discover">
+        <div class="card-stack" id="card-stack">
+            <div class="profile-card" id="profile-card">
+                <div class="avatar-area" id="avatar-area"></div>
+                <div class="profile-body">
+                    <p class="profile-bio" id="pbio"></p>
+                    <div class="tags" id="ptags"></div>
+                    <div class="facts-row" id="pfacts"></div>
+                </div>
+            </div>
+            <div class="match-toast" id="match-toast">
+                <div class="mt-avatars"><div id="mt-av-placeholder"></div><div style="font-size:20px">💖</div><div style="width:64px;height:64px;border-radius:50%;background:#FBEAF0;color:#993556;display:flex;align-items:center;justify-content:center;font-size:24px;border:2.5px solid #D4537E">JA</div></div>
+                <div class="mt-title">It's a Match!</div>
+                <div class="mt-sub" id="mt-sub"></div>
+                <div class="mt-btns"><button class="mt-btn-msg" id="mt-msg-btn">Message</button><button class="mt-btn-skip" id="mt-skip-btn">Keep swiping</button></div>
+            </div>
+        </div>
+        <div class="action-bar"><div class="action-btn nope" id="btn-nope">✕</div><div class="action-btn super" id="btn-super">★</div><div class="action-btn like" id="btn-like">♥</div></div>
+    </div>
+
+    <div class="screen" id="screen-matches">
+        <div class="section-title">New matches</div>
+        <div class="match-scroll" id="match-scroll"></div>
+        <div class="section-title">Messages</div>
+        <div class="conv-list" id="conv-list"></div>
+    </div>
+
+    <div class="screen" id="screen-chat">
+        <div class="chat-header">
+            <div class="back-btn" id="back-btn">←</div>
+            <div id="chat-av-wrap"></div>
+            <div class="chat-header-info">
+                <div class="chat-header-name" id="chat-hname"></div>
+                <div class="chat-header-sub" id="chat-hsub">Online teraz</div>
+            </div>
+            <button class="ai-toggle" id="ai-toggle">✦ AI zapnuté</button>
+        </div>
+        <div class="messages" id="messages"></div>
+        <div class="suggest-row" id="suggest-row"></div>
+        <div class="chat-input-row">
+            <input class="chat-input" id="chat-input" placeholder="Napíš správu..."/>
+            <button class="send-btn" id="send-btn">↑</button>
+        </div>
+    </div>
+
+    <div class="bottomnav">
+        <button class="bnav-btn active" data-screen="discover">✦ Discover</button>
+        <button class="bnav-btn" data-screen="matches">💬 Matches</button>
+        <button class="bnav-btn" data-screen="profile">👤 Profile</button>
+    </div>
+</div>
+
+<script>
+// SEM VLOŽ SVOJU ADRESU Z RENDERU (napíšem ti ju do návodu)
+const BACKEND_URL = "https://TVOJA_ADRESA_Z_RENDERU.onrender.com";
+
+const profiles = [
+    {id:1, name:"Sofia", age:26, location:"Viedeň, AT", photos:["https://i.pravatar.cc/400?img=47"], initials:"S", bio:"Milovníčka kávy a víkendová turistka.", tags:["Design","Turistika","Káva"], facts:["🎓 Uni Viedeň","🌍 30+ krajín"], matched:true, suggestions:["Tvoje obľúbené miesto v BA?"]},
+    {id:2, name:"Marco", age:29, location:"Bratislava, SK", photos:["https://i.pravatar.cc/400?img=12"], initials:"M", bio:"Softvérový inžinier a kuchár amatér.", tags:["Varenie","Tech","Cestovanie"], facts:["🍝 Expert na pastu","🎮 Hráč"], matched:true, suggestions:["Čo najlepšie vieš uvariť?"]},
+    {id:3, name:"Léa", age:27, location:"Praha, CZ", photos:["https://i.pravatar.cc/400?img=44"], initials:"L", bio:"Knihomoľka a učiteľka jógy.", tags:["Knihy","Jóga","Poézia"], facts:["🎸 Hrá na gitare","📚 50 kníh za rok"], matched:false, suggestions:["Naposledy prečítaná kniha?"]}
+];
+
+let currentIdx = 0, aiEnabled = true, currentProfile = null, isSending = false;
+const histories = {};
+profiles.forEach(p => { histories[p.id] = p.matched ? [{role:'model', text:`Ahoj! Všimol som si, že ťa zaujíma ${p.tags[0].toLowerCase()}. Spýtaj sa ma čokoľvek! 👀`}] : []; });
+
+// --- POMOCNÉ FUNKCIE PRE ROZHRANIE ---
+function renderCard() {
+    const stack = document.getElementById('card-stack');
+    if(currentIdx >= profiles.length) { stack.innerHTML = '<div class="empty-state">Dnes si už videl všetkých!</div>'; return; }
+    const p = profiles[currentIdx];
+    document.getElementById('avatar-area').innerHTML = `<img src="${p.photos[0]}" alt="${p.name}"><div class="profile-overlay"><div class="profile-name">${p.name}, ${p.age}</div><div class="profile-loc">📍 ${p.location}</div></div>`;
+    document.getElementById('pbio').textContent = p.bio;
+    document.getElementById('ptags').innerHTML = p.tags.map(t => `<div class="tag">${t}</div>`).join('');
+    document.getElementById('pfacts').innerHTML = p.facts.map(f => `<div class="fact">${f}</div>`).join('');
+}
+
+function swipe(direction) {
+    const p = profiles[currentIdx];
+    const card = document.getElementById('profile-card');
+    const flyClass = direction === 'right' ? 'fly-right' : 'fly-left';
+    card.classList.add(flyClass);
+    setTimeout(() => {
+        card.classList.remove(flyClass);
+        if(direction === 'right' && p.matched) {
+            showMatchToast(p);
+        } else {
+            currentIdx++; renderCard();
+        }
+    }, 400);
+}
+
+function showMatchToast(p) {
+    const toast = document.getElementById('match-toast');
+    document.getElementById('mt-av-placeholder').innerHTML = `<img src="${p.photos[0]}" class="mt-av">`;
+    document.getElementById('mt-sub').textContent = `Ty a ${p.name} ste sa si padli do oka!`;
+    toast.classList.add('show');
+    document.getElementById('mt-msg-btn').onclick = () => { toast.classList.remove('show'); openChat(p); switchScreen('chat'); currentIdx++; renderCard(); };
+    document.getElementById('mt-skip-btn').onclick = () => { toast.classList.remove('show'); currentIdx++; renderCard(); };
+}
+
+// --- HLAVNÁ FUNKCIA: VOLANIE TVOJHO BACKENDU ---
+async function callGemini(profile, history) {
+    const url = `${BACKEND_URL}/api/chat`;
+    const lastMsg = history[history.length - 1].text;
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: lastMsg,
+                name: profile.name,
+                bio: profile.bio
+            })
+        });
+
+        const data = await response.json();
+        return data.reply || "Prepáč, momentálne mi to nemyslí. 🤖";
+    } catch (e) {
+        console.error("Chyba spojenia s Renderom:", e);
+        return "Server je offline. Skontroluj Render! 🔌";
+    }
+}
+
+async function sendMessage() {
+    if(isSending || !currentProfile) return;
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim(); if(!text) return;
+    
+    isSending = true; input.value = '';
+    histories[currentProfile.id].push({ role:'user', text });
+    renderMessages();
+
+    if(aiEnabled) {
+        const msgs = document.getElementById('messages');
+        const typing = document.createElement('div');
+        typing.className = 'msg typing';
+        typing.textContent = `✦ ${currentProfile.name} píše…`;
+        msgs.appendChild(typing);
+        msgs.scrollTop = msgs.scrollHeight;
+
+        const reply = await callGemini(currentProfile, histories[currentProfile.id]);
+        typing.remove();
+        histories[currentProfile.id].push({ role:'model', text: reply });
+        renderMessages();
+    }
+    isSending = false;
+}
+
+// --- OSTATNÁ LOGIKA ---
+function openChat(p) {
+    currentProfile = p;
+    document.getElementById('chat-av-wrap').innerHTML = `<img src="${p.photos[0]}" class="chat-av">`;
+    document.getElementById('chat-hname').textContent = p.name;
+    document.getElementById('chat-hsub').textContent = `${p.age} · ${p.location}`;
+    renderMessages(); renderSuggestions();
+}
+
+function renderMessages() {
+    const c = document.getElementById('messages'); c.innerHTML = '';
+    histories[currentProfile.id].forEach(m => {
+        const d = document.createElement('div'); d.className = 'msg ' + (m.role==='user'?'me':'them');
+        d.textContent = m.text; c.appendChild(d);
+    });
+    c.scrollTop = c.scrollHeight;
+}
+
+function renderSuggestions() {
+    const row = document.getElementById('suggest-row');
+    row.innerHTML = currentProfile.suggestions.map(s => `<div class="suggest-chip" onclick="useSuggestion('${s}')">✦ ${s}</div>`).join('');
+}
+
+function useSuggestion(text) { document.getElementById('chat-input').value = text; }
+
+function switchScreen(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+    if(name === 'matches') renderMatches();
+}
+
+function renderMatches() {
+    const ms = document.getElementById('match-scroll'); ms.innerHTML = '';
+    const cl = document.getElementById('conv-list'); cl.innerHTML = '';
+    profiles.filter(p => p.matched).forEach(p => {
+        ms.innerHTML += `<div class="match-bubble" onclick="openChat(${JSON.stringify(p)}); switchScreen('chat')"><img src="${p.photos[0]}" class="mb-img"><div class="match-name-sm">${p.name}</div></div>`;
+        const last = histories[p.id].length ? histories[p.id][histories[p.id].length-1].text : "Povedz ahoj!";
+        cl.innerHTML += `<div class="conv-item" onclick='openChat(${JSON.stringify(p)}); switchScreen("chat")'><img src="${p.photos[0]}" class="conv-av"><div class="conv-info"><div class="conv-name">${p.name} <span class="ai-badge">✦ AI</span></div><div class="conv-preview">${last}</div></div></div>`;
+    });
+}
+
+// --- EVENTY ---
+document.getElementById('btn-like').onclick = () => swipe('right');
+document.getElementById('btn-nope').onclick = () => swipe('left');
+document.getElementById('send-btn').onclick = sendMessage;
+document.getElementById('back-btn').onclick = () => switchScreen('matches');
+document.querySelectorAll('.bnav-btn').forEach(btn => { btn.onclick = () => switchScreen(btn.dataset.screen); });
+document.getElementById('ai-toggle').onclick = function() { aiEnabled = !aiEnabled; this.textContent = aiEnabled ? '✦ AI zapnuté' : '○ AI vypnuté'; this.classList.toggle('off'); };
+
+renderCard();
+</script>
+</body>
+</html>
