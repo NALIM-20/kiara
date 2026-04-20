@@ -13,25 +13,41 @@ def chat():
         user_msg = data.get("message")
         char_name = data.get("name")
         char_bio = data.get("bio")
-
         api_key = os.getenv("GEMINI_KEY")
-        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
+
+        # Opravená URL - v1beta a nový model
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
 
         prompt = f"Hráš rolu osoby na zoznamke. Meno: {char_name}. Bio: {char_bio}. Odpovedaj krátko a slovensky na: {user_msg}"
-        payload = {"contents": [{"parts": [{"text": prompt}]}]}
-        
+
+        payload = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [{"text": prompt}]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.9,
+                "maxOutputTokens": 300
+            }
+        }
+
         response = requests.post(url, json=payload)
         result = response.json()
 
-        # TENTO RIADOK NÁM POMÔŽE: Vypíše odpoveď od Googlu do logov na Renderi
+        print(f"DEBUG: Status kod: {response.status_code}")
         print(f"DEBUG: Odpoved od Google API: {result}")
 
         if 'candidates' in result:
             ai_text = result['candidates'][0]['content']['parts'][0]['text']
             return jsonify({"reply": ai_text})
+        elif 'error' in result:
+            error_msg = result['error'].get('message', 'Neznama chyba')
+            print(f"DEBUG: Google chyba: {error_msg}")
+            return jsonify({"error": "Google API error", "details": error_msg}), 400
         else:
-            # Ak Google vráti chybu (napr. neplatný kľúč), pošleme ju do logov
-            return jsonify({"error": "Google API error", "details": result}), 400
+            return jsonify({"error": "Neocakavana odpoved", "details": result}), 400
 
     except Exception as e:
         print(f"DEBUG CHYBA: {str(e)}")
